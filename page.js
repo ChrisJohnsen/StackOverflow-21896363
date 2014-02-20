@@ -18,16 +18,6 @@ var fileHandler = {
 
             self.entry = dirEntry;
             cb && cb(self.entry);
-
-            var reader = self.entry.createReader();
-            reader.readEntries(function(entries) {
-              for (var i = 0; i < entries.length; ++i) {
-                console.log("entry is " + entries[i].fullPath);
-              }
-            }, function(){
-                console.log("error");
-            });
-
         });
 
 
@@ -76,9 +66,34 @@ var fileHandler = {
 /*
  * Added Code Starts Here
  */
+function list_dir(dirent, cb, listing) {
+    if (listing === undefined) listing = [];
+    var reader = dirent.createReader();
+    var read_some = reader.readEntries.bind(reader, function(ents) {
+        if (ents.length === 0)
+            return cb && cb(listing);
+        process_some(ents, 0);
+        function process_some(ents, i) {
+            for(; i < ents.length; i++) {
+                listing.push(ents[i]);
+                if (ents[i].isDirectory)
+                    return list_dir(ents[i], process_some.bind(null, ents, i + 1), listing);
+            }
+            read_some();
+        }
+    }, function() {
+        console.error('error reading directory');
+    });
+    read_some();
+}
+
 fileHandler.open(function(ent) {
     console.log('opened', ent);
-    fileHandler.save('existing_dir/maybe_new_file','Some small data');
+    ent && list_dir(fileHandler.entry, function(listing) {
+        fileHandler.listing = listing;
+        console.log('listing', fileHandler.listing.map(function(ent){return ent.fullPath}).join('\n'));
+        fileHandler.save('existing_dir/maybe_new_file','Some small data');
+    });
 });
 /*
  * Added Code Ends Here
