@@ -2,9 +2,11 @@ function so21896363() {
 /*
 /* Posted Code Starts Here
  */
-var fileHandler = {
-    entry: null,
-    open: function(cb){
+var fileHandler = function () {
+
+    var _entry = null;
+
+    this.open = function(cb){
 
         chrome.fileSystem.chooseEntry({ type: 'openDirectory' }, 
         function(dirEntry) {
@@ -14,37 +16,48 @@ var fileHandler = {
                 return;
             }
 
-            this.entry = dirEntry;
+            _entry = dirEntry;
 
-            var reader = this.entry.createReader();
+
+            var reader = _entry.createReader();
             reader.readEntries(function(entries) {
-              for (var i = 0; i < entries.length; ++i) {
-                console.log("entry is " + entries[i].fullPath);
-              }
+
+                if (cb !== undefined) {
+                    listDir(entries, cb);
+                }
+
+                //DO I NEED TO SAVE SOMETHING HERE?
+
             }, function(){
-                console.log("error");
+                cb && cb(null);
             });
 
         });
 
 
-    },
+    };
 
-    save: function(filename, source) {
+    this.save = function(filename, source) {
 
-        chrome.fileSystem.getWritableEntry(this.entry, function(entry) {
+        chrome.fileSystem.getWritableEntry(_entry, function(entry) {
 
             entry.getFile(filename, {create:true}, function(entry) {
                 entry.createWriter(function(writer) {
+
+                    writer.onwrite = function() {
+                        writer.onwrite = null;
+                        writer.truncate(writer.position);
+                    };
+
                     writer.write(new Blob([source], {type: 'text/javascript'}));
                 });
             });
 
         });
 
-    },
+    };
 
-    saveAs: function(filename, source) {
+    this.saveAs = function(filename, source) {
 
         chrome.fileSystem.chooseEntry({type:'openDirectory'}, 
         function(entry) {
@@ -53,6 +66,12 @@ var fileHandler = {
 
                 entry.getFile(filename, {create:true}, function(entry) {
                     entry.createWriter(function(writer) {
+
+                        writer.onwrite = function() {
+                            writer.onwrite = null;
+                            writer.truncate(writer.position);
+                        };
+
                         writer.write(new Blob([source], {type: 'text/javascript'}));
                     });
                 });
@@ -60,8 +79,45 @@ var fileHandler = {
             });
         });
 
-    }
-}
+    };
+
+    var listDir = function(dirent, cb, listing) {
+        if (listing === undefined) {
+            listing = [];
+        }
+
+        var reader = dirent.createReader();
+
+        var read_some = reader.readEntries.bind(reader, 
+        function(ents) {
+
+            if (ents.length === 0) {
+                return cb && cb(listing);
+            }
+
+            var process_some = function (ents, i) {
+
+                for (var i = 0; i < ents.length; i++) {
+                    listing.push(ents[i]);
+
+                    if (ents[i].isDirectory) {
+                        return listDir(ents[i], process_some.bind(null, ents, i + 1), listing);
+                    }
+                }
+
+                read_some();
+            };
+
+            process_some(ents, 0);
+
+        }, function() {
+            console.error('error reading directory');
+        });
+
+        read_some();
+    };
+
+};
 /*
  * Posted Code Ends Here
  */
