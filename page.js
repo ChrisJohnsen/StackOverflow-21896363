@@ -65,6 +65,17 @@ var fileHandler = {
 /*
  * Posted Code Ends Here
  */
+
+/*
+ * Added Code Starts Here
+ */
+fileHandler.open(function(ent) {
+    console.log('opened', ent);
+    fileHandler.save('existing_dir/maybe_new_file','Some small data');
+});
+/*
+ * Added Code Ends Here
+ */
 }
 
 so21896363();
