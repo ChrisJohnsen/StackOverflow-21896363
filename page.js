@@ -125,9 +125,10 @@ var fileHandler = function () {
 /*
  * Added Code Starts Here
  */
-fileHandler.open(function(ent) {
-    console.log('opened', ent);
-    fileHandler.save('existing_dir/maybe_new_file','Some small data');
+var fh = new fileHandler();
+fh.open(function(listing) {
+    console.log('opened', listing.map(function(e){return e.fullPath}).join('\n'));
+    fh.save('existing_dir/maybe_new_file','Some small data');
 });
 /*
  * Added Code Ends Here
