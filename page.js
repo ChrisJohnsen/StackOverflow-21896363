@@ -5,6 +5,8 @@ function so21896363() {
 var fileHandler = {
     entry: null,
     open: function(cb){
+        // capture this so we can refer to it in the chooseEntry callback
+        var self = this;
 
         chrome.fileSystem.chooseEntry({ type: 'openDirectory' }, 
         function(dirEntry) {
@@ -14,9 +16,10 @@ var fileHandler = {
                 return;
             }
 
-            this.entry = dirEntry;
+            self.entry = dirEntry;
+            cb && cb(self.entry);
 
-            var reader = this.entry.createReader();
+            var reader = self.entry.createReader();
             reader.readEntries(function(entries) {
               for (var i = 0; i < entries.length; ++i) {
                 console.log("entry is " + entries[i].fullPath);
@@ -36,6 +39,10 @@ var fileHandler = {
 
             entry.getFile(filename, {create:true}, function(entry) {
                 entry.createWriter(function(writer) {
+                    writer.onwrite = function() {
+                        writer.onwrite = null;
+                        writer.truncate(writer.position);
+                    };
                     writer.write(new Blob([source], {type: 'text/javascript'}));
                 });
             });
