@@ -18,20 +18,7 @@ var fileHandler = function () {
 
             _entry = dirEntry;
 
-
-            var reader = _entry.createReader();
-            reader.readEntries(function(entries) {
-
-                if (cb !== undefined) {
-                    listDir(entries, cb);
-                }
-
-                //DO I NEED TO SAVE SOMETHING HERE?
-
-            }, function(){
-                cb && cb(null);
-            });
-
+            listDir(_entry, cb);
         });
 
 
@@ -97,7 +84,7 @@ var fileHandler = function () {
 
             var process_some = function (ents, i) {
 
-                for (var i = 0; i < ents.length; i++) {
+                for (; i < ents.length; i++) {
                     listing.push(ents[i]);
 
                     if (ents[i].isDirectory) {
